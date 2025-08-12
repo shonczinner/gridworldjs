@@ -1,1 +1,3 @@
-Javascript implementation of tabular/discrete algorithms, Monte-Carlo, SARSA, Q-Learning, and Double Q-Learning applied to a basic gridworld environment
+Javascript implementation of tabular/discrete algorithms, Monte-Carlo, SARSA, Q-Learning, and Double Q-Learning applied to a basic gridworld environment.
+
+Live link: https://shonczinner.github.io/gridworldjs/
