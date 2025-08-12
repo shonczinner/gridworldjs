@@ -192,9 +192,8 @@ setQValuesButton.addEventListener('click', () => {
 
 agentSelect.addEventListener('change', () => {
     reset();
-    agent = createAgent();
-    env.draw(agent.QTable, container);
     status.innerHTML = `Agent switched to ${agentSelect.value}`;
+    env.draw(agent.QTable, container);
 });
 
 reset();
