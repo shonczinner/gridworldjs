@@ -120,31 +120,28 @@ stopButton.addEventListener('click', () => {
 });
 
 
-function reset(){
-  // Stop simulator if it's running
-    if (simulator && simulator.isRunning) {
-        simulator.stop();
+function reset() {
+    // If old simulator exists, stop it and kill its callbacks
+    if (simulator) {
+        simulator.stop(); // sets isRunning = false & increments runId
     }
 
-    // Recreate environment and agent
+    // Create fresh environment and agent
     env = new GridWorld(DEFAULT_GRID_SIZE);
     agent = createAgent();
 
-    // Redraw environment
+    // Clear plot & redraw environment
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     env.draw(agent.QTable, container);
 
-    // Reset plot
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Reset status text
+    // Reset UI
     status.innerHTML = "Environment reset.";
-
     epsilonInput.value = DEFAULT_EPSILON;
     epsilonDecayInput.value = DEFAULT_EPSILON_DECAY;
     discountRateInput.value = DEFAULT_DISCOUNT_RATE;
     learningRateInput.value = DEFAULT_LEARNING_RATE;
 
-    // Create a fresh simulator
+    // Create a new simulator bound to the latest runId
     simulator = new GridWorldSimulator({
         env,
         agent,
@@ -152,7 +149,6 @@ function reset(){
             env.draw(agent.QTable, container);
         },
         onProgress: (ep, reward, epsilon, rewardHistory, history) => {
-            console.log(`Progress: ${ep} / ${nEpisodes}`);
             status.innerHTML = `Progress: ${ep} / ${nEpisodes}, Reward: ${reward}`;
             updatePlot(rewardHistory, MOVING_AVERAGE_WINDOW, ctx);
             agent.update(history, discountRate);
@@ -165,9 +161,10 @@ function reset(){
         }
     });
 
-    // Re-enable controls
+    // Enable controls after reset
     setControlsDisabled(false);
 }
+
 
 resetButton.addEventListener('click', () => {
   reset();

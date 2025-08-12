@@ -7,36 +7,44 @@ class GridWorldSimulator {
         this.onFinish = onFinish || (() => {});
         this.isRunning = false;
         this.rewardHistory = [];
+        this.runId = 0; // unique ID for each run
     }
 
-    async start(maxSteps,nEpisodes,stepDelay=100) {
+    async start(maxSteps, nEpisodes, stepDelay = 100) {
         this.isRunning = true;
-
+        this.runId++;
+        const myRunId = this.runId;
 
         for (let episode = 0; episode < nEpisodes; episode++) {
-            if (!this.isRunning) {
-                console.log('Simulation stopped.');
-                break;
-            }
+            if (!this.isRunning || myRunId !== this.runId) break;
 
-            const history = await this.runEpisode(stepDelay, maxSteps);
+            const history = await this.runEpisode(stepDelay, maxSteps, myRunId);
+            if (!this.isRunning || myRunId !== this.runId) break;
+
             const totalReward = history.rewards.reduce((a, b) => a + b, 0);
             this.rewardHistory.push(totalReward);
-            console.log(`Episode ${episode + 1} finished. Total Reward = ${totalReward}`);
 
-           
-            this.onProgress(episode + 1, totalReward,this.agent.epsilon.toPrecision(4),this.rewardHistory,history);
+            this.onProgress(
+                episode + 1,
+                totalReward,
+                this.agent.epsilon.toPrecision(4),
+                this.rewardHistory,
+                history
+            );
         }
 
-        this.isRunning = false;
-        this.onFinish();  // 🔔 Notify simulation finished
+        if (myRunId === this.runId) {
+            this.isRunning = false;
+            this.onFinish();
+        }
     }
 
     stop() {
         this.isRunning = false;
+        this.runId++; // invalidate any pending async work
     }
 
-    async runEpisode(delay, maxSteps) {
+    async runEpisode(delay, maxSteps, myRunId) {
         const episodeHistory = {
             states: [],
             actions: [],
@@ -48,6 +56,8 @@ class GridWorldSimulator {
         let done = false;
 
         for (let step = 0; step < maxSteps; step++) {
+            if (!this.isRunning || myRunId !== this.runId) break;
+
             const action = this.agent.selectAction(obs[0], obs[1], true);
 
             episodeHistory.states.push(obs);
@@ -55,6 +65,7 @@ class GridWorldSimulator {
 
             const result = this.env.step(action);
 
+            if (!this.isRunning || myRunId !== this.runId) break;
             this.onStep();
 
             episodeHistory.rewards.push(result.reward);
@@ -72,8 +83,6 @@ class GridWorldSimulator {
 
         return episodeHistory;
     }
-
-
 
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
