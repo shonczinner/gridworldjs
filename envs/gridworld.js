@@ -75,80 +75,114 @@ class GridWorld {
     return Math.floor(Math.random() * Object.keys(ACTIONS).length);
   }
 
-  draw(qTable = null,container=null) {
-    const table = document.createElement('table');
-    table.style.borderCollapse = 'collapse';
-    table.style.marginTop = '10px';
+  draw(qTable = null, container = null) {
+    const arrowMap = ['↑', '↓', '←', '→'];  // Actions
+    const createEnvTable = () => {
+      const table = document.createElement('table');
+      table.style.borderCollapse = 'collapse';
+      table.style.marginTop = '10px';
 
-    const arrowMap = ['↑', '↓', '←', '→'];  // Action arrows
+      for (let i = 0; i < this.size; i++) {
+        const row = document.createElement('tr');
+        for (let j = 0; j < this.size; j++) {
+          const cell = document.createElement('td');
+          cell.style.width = `${CELL_SIZE_PX}px`;
+          cell.style.height = `${CELL_SIZE_PX}px`;
+          cell.style.textAlign = 'center';
+          cell.style.border = '1px solid black';
+          cell.style.fontWeight = 'bold';
+          cell.style.fontSize = '14px';
 
-    for (let i = 0; i < this.size; i++) {
-      const row = document.createElement('tr');
-      for (let j = 0; j < this.size; j++) {
-        const cell = document.createElement('td');
-        cell.style.width = `${CELL_SIZE_PX}px`;
-        cell.style.height = `${CELL_SIZE_PX}px`;
-        cell.style.textAlign = 'center';
-        cell.style.border = '1px solid black';
-        cell.style.fontWeight = 'bold';
-        cell.style.position = 'relative';
-        cell.style.fontSize = '14px';
+          // Agent
+          if (this.agentPos[0] === i && this.agentPos[1] === j) {
+            cell.textContent = AGENT_LABEL;
+            cell.style.backgroundColor = AGENT_COLOR;
 
-        // Agent
-        if (this.agentPos[0] === i && this.agentPos[1] === j) {
-          cell.textContent = AGENT_LABEL;
-          cell.style.backgroundColor = AGENT_COLOR;
+          // Goal
+          } else if (this.goalPos[0] === i && this.goalPos[1] === j) {
+            cell.textContent = GOAL_LABEL;
+            cell.style.backgroundColor = GOAL_COLOR;
 
-        // Goal
-        } else if (this.goalPos[0] === i && this.goalPos[1] === j) {
-          cell.textContent = GOAL_LABEL;
-          cell.style.backgroundColor = GOAL_COLOR;
+          // Trap
+          } else if (this._isTrap([i, j])) {
+            cell.textContent = TRAP_LABEL;
+            cell.style.backgroundColor = TRAP_COLOR;
 
-        // Trap
-        } else if (this._isTrap([i, j])) {
-          cell.textContent = TRAP_LABEL;
-          cell.style.backgroundColor = TRAP_COLOR;
-
-        // Empty cell, possibly with Q info
-        } else if (qTable) {
-          // Get max Q and best action
-          let bestAction = 0;
-          let bestValue = qTable.getValue(i, j, 0);
-          for (let a = 1; a < 4; a++) {
-            const val = qTable.getValue(i, j, a);
-            if (val > bestValue) {
-              bestValue = val;
-              bestAction = a;
+          // Empty with best action
+          } else if (qTable) {
+            let bestAction = 0;
+            let bestValue = qTable.getValue(i, j, 0);
+            for (let a = 1; a < 4; a++) {
+              const val = qTable.getValue(i, j, a);
+              if (val > bestValue) {
+                bestValue = val;
+                bestAction = a;
+              }
             }
+            const arrowElem = document.createElement('div');
+            arrowElem.textContent = arrowMap[bestAction];
+            arrowElem.style.fontSize = '16px';
+
+            const valueElem = document.createElement('div');
+            valueElem.textContent = bestValue.toFixed(1);
+            valueElem.style.fontSize = '12px';
+
+            cell.appendChild(arrowElem);
+            cell.appendChild(valueElem);
           }
 
-          const arrow = arrowMap[bestAction];
-          const value = bestValue.toFixed(1);
-
-          const arrowElem = document.createElement('div');
-          arrowElem.textContent = arrow;
-          arrowElem.style.fontSize = '16px';
-
-          const valueElem = document.createElement('div');
-          valueElem.textContent = value;
-          valueElem.style.fontSize = '12px';
-
-          cell.appendChild(arrowElem);
-          cell.appendChild(valueElem);
+          row.appendChild(cell);
         }
-
-        row.appendChild(cell);
+        table.appendChild(row);
       }
-      table.appendChild(row);
-    }
-    if(container){
+      return table;
+    };
+
+    const createQTable = () => {
+      const table = document.createElement('table');
+      table.style.borderCollapse = 'collapse';
+      table.style.marginTop = '10px';
+      table.style.marginLeft = '20px';
+
+      for (let i = 0; i < this.size; i++) {
+        const row = document.createElement('tr');
+        for (let j = 0; j < this.size; j++) {
+          const cell = document.createElement('td');
+          cell.style.width = `${CELL_SIZE_PX * 1.5}px`;
+          cell.style.height = `${CELL_SIZE_PX * 1.5}px`;
+          cell.style.border = '1px solid black';
+          cell.style.fontSize = '10px';
+          cell.style.whiteSpace = 'pre-line';
+          cell.style.textAlign = 'center';
+
+          if (qTable) {
+            let qStr = arrowMap.map((arrow, a) => 
+              `${arrow}: ${qTable.getValue(i, j, a).toFixed(2)}`
+            ).join('\n');
+            cell.textContent = qStr;
+          }
+
+          row.appendChild(cell);
+        }
+        table.appendChild(row);
+      }
+      return table;
+    };
+
+    // Build both tables
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'flex-start';
+    wrapper.appendChild(createEnvTable());
+    if (qTable) wrapper.appendChild(createQTable());
+
+    if (container) {
       container.innerHTML = '';
-      container.appendChild(table);
-      return
+      container.appendChild(wrapper);
+      return;
     }
 
-    return table;
-    
+    return wrapper;
   }
 
 }
